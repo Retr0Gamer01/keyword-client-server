@@ -11,7 +11,7 @@ app.use(express.json()); // Для обработки JSON запросов
 
 // База данных ключевых слов и URL
 const keywords = {
-    technology: ['https://jsonplaceholder.typicode.com/posts', 'https://jsonplaceholder.typicode.com/users'],
+    technology: ['https://techcrunch.com', 'https://www.wired.com'],
     science: ['https://jsonplaceholder.typicode.com/comments', 'https://jsonplaceholder.typicode.com/albums']
 };
 
