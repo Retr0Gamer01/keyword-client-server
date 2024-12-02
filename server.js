@@ -1,67 +1,51 @@
 const express = require('express');
-const path = require('path');
 const axios = require('axios');
+const cors = require('cors');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
-// Данные: соответствие ключевых слов и URL
+// Включаем CORS
+app.use(cors());
+app.use(express.json()); // Для обработки JSON запросов
+
+// База данных ключевых слов и URL
 const keywords = {
-  technology: ['https://techcrunch.com', 'https://www.wired.com'],
-  science: ['https://www.nature.com', 'https://www.sciencemag.org'],
-  sports: ['https://www.espn.com', 'https://www.sportsnews.com']
+    technology: ['https://jsonplaceholder.typicode.com/posts', 'https://jsonplaceholder.typicode.com/users'],
+    science: ['https://jsonplaceholder.typicode.com/comments', 'https://jsonplaceholder.typicode.com/albums']
 };
 
-// Middleware для обработки JSON-запросов
-app.use(express.json());
+// Эндпоинт для получения списка URL по ключевому слову
+app.post('/api/keywords', (req, res) => {
+    const { keyword } = req.body;
 
-// Папка для статики (файлы клиента)
-app.use(express.static(path.join(__dirname, 'public')));
+    if (!keyword || !keywords[keyword]) {
+        return res.status(404).json({ error: 'Keyword not found' });
+    }
 
-// Корневой маршрут для отдачи index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+    res.json({ urls: keywords[keyword] });
 });
 
-// Маршрут для получения URL по ключевому слову
-app.get('/api/urls', (req, res) => {
-  const keyword = req.query.keyword?.toLowerCase(); // Приведение ключевого слова к нижнему регистру
-  console.log('Получено ключевое слово:', keyword);
-
-  if (!keyword || !keywords[keyword]) {
-    console.log('Ключевое слово не найдено:', keyword);
-    return res.status(404).json({ error: 'Keyword not found.' });
-  }
-
-  console.log('Найдены URL:', keywords[keyword]);
-  res.json({ urls: keywords[keyword] });
-});
-
-// Маршрут для загрузки содержимого по URL
+// Эндпоинт для загрузки контента с выбранного URL
 app.post('/api/download', async (req, res) => {
-  const { url } = req.body;
+    const { url } = req.body;
 
-  if (!url) {
-    console.error('URL не указан');
-    return res.status(400).json({ error: 'URL не указан' });
-  }
+    if (!url) {
+        return res.status(400).json({ error: 'URL is required' });
+    }
 
-  try {
-    console.log('Загрузка содержимого с URL:', url);
-    const response = await axios.get(url);
-    res.json({ content: response.data });
-  } catch (error) {
-    console.error('Ошибка при загрузке URL:', error.message);
-    res.status(500).json({ error: 'Не удалось загрузить содержимое' });
-  }
+    try {
+        const response = await axios.get(url);
+        res.json({ content: response.data });
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch content from the URL' });
+    }
 });
 
-// Обработка ошибок для неизвестных маршрутов
-app.use((req, res) => {
-  res.status(404).send('Маршрут не найден');
-});
+// Раздача статических файлов клиентской части
+app.use(express.static('public'));
 
 // Запуск сервера
 app.listen(PORT, () => {
-  console.log(`Сервер запущен на http://localhost:${PORT}`);
+    console.log(`Сервер запущен на порту ${PORT}`);
 });
