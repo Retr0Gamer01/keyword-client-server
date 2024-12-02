@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HTTP Клиент-Сервер</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #urls, #content {
+      margin-top: 20px;
+    }
+    button {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Клиент-Сервер для работы с ключевыми словами</h1>
+  <div>
+    <label for="keyword">Введите ключевое слово:</label>
+    <input type="text" id="keyword" placeholder="Например, technology">
+    <button id="fetchUrls">Получить URL</button>
+  </div>
+  <div id="urls"></div>
+  <div id="content"></div>
+
+  <script>
+    const BASE_URL = 'http://localhost:10000'; // Адрес вашего сервера
+
+    // Функция для получения URL по ключевому слову
+    async function fetchUrls() {
+      const keyword = document.getElementById('keyword').value.trim();
+      if (!keyword) {
+        alert('Введите ключевое слово');
+        return;
+      }
+
+      try {
+        const response = await fetch(`${BASE_URL}/api/urls?keyword=${encodeURIComponent(keyword)}`);
+        if (!response.ok) {
+          throw new Error('Ключевое слово не найдено');
+        }
+
+        const data = await response.json();
+        displayUrls(data.urls);
+      } catch (error) {
+        console.error('Ошибка:', error.message);
+        alert(`Ошибка: ${error.message}`);
+      }
+    }
+
+    // Функция для отображения списка URL
+    function displayUrls(urls) {
+      const urlsContainer = document.getElementById('urls');
+      urlsContainer.innerHTML = '';
+
+      if (urls.length === 0) {
+        urlsContainer.innerHTML = '<p>Нет доступных URL для данного ключевого слова.</p>';
+        return;
+      }
+
+      const list = document.createElement('ul');
+      urls.forEach((url, index) => {
+        const listItem = document.createElement('li');
+        const button = document.createElement('button');
+        button.textContent = `Загрузить контент с URL #${index + 1}`;
+        button.onclick = () => fetchContent(url);
+        listItem.textContent = url;
+        listItem.appendChild(button);
+        list.appendChild(listItem);
+      });
+      urlsContainer.appendChild(list);
+    }
+
+    // Функция для загрузки содержимого URL
+    async function fetchContent(url) {
+      try {
+        const response = await fetch(`${BASE_URL}/api/download`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url })
+        });
+
+        if (!response.ok) {
+          throw new Error('Не удалось загрузить содержимое');
+        }
+
+        const data = await response.json();
+        displayContent(data.content);
+      } catch (error) {
+        console.error('Ошибка:', error.message);
+        alert(`Ошибка: ${error.message}`);
+      }
+    }
+
+    // Функция для отображения загруженного содержимого
+    function displayContent(content) {
+      const contentContainer = document.getElementById('content');
+      contentContainer.innerHTML = '<h3>Загруженное содержимое:</h3>';
+      const pre = document.createElement('pre');
+      pre.textContent = content;
+      contentContainer.appendChild(pre);
+    }
+
+    // Привязка события на кнопку
+    document.getElementById('fetchUrls').onclick = fetchUrls;
+  </script>
+</body>
+</html>
